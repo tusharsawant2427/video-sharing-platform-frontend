@@ -15,19 +15,13 @@
       ></textarea>
       <div v-if="postBodyError" class="text-danger">{{ postBodyError }}</div>
     </div>
-    <div class="form-group">
-      <label for="videoFile">Video File</label>
-      <input
-        type="file"
-        class="form-control-file"
-        id="videoFile"
-        @change="handleFileUpload"
-        accept="video/*"
-      />
-      <div v-if="videoFileError" class="text-danger">
-        {{ videoFileError }}
-      </div>
-    </div>
+    <DropzoneComponent
+      @files-added="handleFilesAdded"
+      @file-upload-success="handleFileUploadSuccess"
+      id="videoDropZone"
+      :identifier="identifier"
+      :isEdit="true"
+    />
 
     <div class="text-center mt-4">
       <div v-if="errorMessage" class="text-danger">{{ errorMessage }}</div>
@@ -47,17 +41,8 @@
         <span v-else>Update Post</span>
       </button>
     </div>
-    <div v-if="uploadProgress > 0" class="progress mt-3">
-      <div
-        class="progress-bar"
-        role="progressbar"
-        :style="{ width: uploadProgress + '%' }"
-        aria-valuenow="uploadProgress"
-        aria-valuemin="0"
-        aria-valuemax="100"
-      >
-        {{ uploadProgress }}%
-      </div>
+    <div class="alert" :class="alertClass" role="alert">
+      {{ alertMessage }}
     </div>
   </form>
 </template>
@@ -66,29 +51,49 @@
 import { ref, onMounted } from "vue";
 import http from "@/http";
 import { useRoute } from "vue-router";
-import { uploadVideoFile, handleFileChange } from "@/utils/videoUpload";
+import DropzoneComponent from "@/components/DropzoneComponent.vue";
 
 export default {
   name: "EditPost",
+  components: {
+    DropzoneComponent,
+  },
   setup() {
     const route = useRoute();
     const postId = route.params.postId;
     const post = ref({});
+    const identifier = ref(null);
     const errorMessage = ref("");
-    const videoFile = ref(null);
     const titleError = ref("");
     const postBodyError = ref("");
     const uploadProgress = ref(0);
-    const videoFileError = ref("");
+    const hasFileAdded = ref(false);
     const isLoading = ref(false);
-
+    const alertClass = ref("alert-default");
+    const alertMessage = ref("");
     const fetchPost = async () => {
       try {
         const response = await http.get(`/posts/my-posts/${postId}/edit`);
         post.value = response.data;
+        identifier.value = post.value.identifier;
       } catch (error) {
         errorMessage.value = "Error fetching post data.";
       }
+    };
+
+    const validateForm = (post) => {
+      titleError.value = "";
+      postBodyError.value = "";
+      if (post.value.title.length <= 0) {
+        titleError.value = "Title is required";
+        return false;
+      }
+
+      if (post.value.post_body.length <= 0) {
+        postBodyError.value = "Post Body is required";
+        return false;
+      }
+      return true;
     };
 
     const handleUpdate = async () => {
@@ -97,50 +102,32 @@ export default {
       postBodyError.value = "";
       isLoading.value = true;
 
-      if (post.value.title.length === 0) {
-        titleError.value = "Title is required";
-        isLoading.value = false;
-        return;
-      }
-
-      if (post.value.post_body.length === 0) {
-        postBodyError.value = "Post Body is required";
-        isLoading.value = false;
-        return;
-      }
-
-      if (post.value.title && post.value.post_body) {
-        try {
-          await http.put(`/posts/my-posts/${postId}/update`, {
-            title: post.value.title,
-            post_body: post.value.post_body,
-          });
-          if (videoFile.value) {
-            const fileUploadResponse = await uploadVideoFile(
-              post.value.identifier,
-              videoFile.value,
-              uploadProgress
-            );
-            if (fileUploadResponse) {
-              alert("Video Uploaded Successfully.");
-            }
-          }
-          videoFile.value = null;
-          uploadProgress.value = 0;
+      try {
+        if (!validateForm(post)) {
           isLoading.value = false;
-        } catch (error) {
-          isLoading.value = false;
-          handlePostError(error);
+          return;
         }
-      } else {
-        errorMessage.value = "All Field Required";
+        await http.put(`/posts/my-posts/${postId}/update`, {
+          title: post.value.title,
+          post_body: post.value.post_body,
+        });
+        alert("Post updated successfully.");
         isLoading.value = false;
-        return;
+      } catch (error) {
+        isLoading.value = false;
+        handlePostError(error);
       }
     };
 
-    const handleFileUpload = (event) => {
-      handleFileChange(event, videoFile, videoFileError);
+    const handleFilesAdded = async () => {
+      hasFileAdded.value = true;
+      identifier.value = "";
+      identifier.value = post.value.identifier;
+    };
+
+    const handleFileUploadSuccess = async () => {
+      alertMessage.value = "Video Uploaded Successfully";
+      alertClass.value = "alert-success";
     };
 
     const handlePostError = (error) => {
@@ -166,11 +153,16 @@ export default {
       post,
       handleUpdate,
       errorMessage,
-      handleFileUpload,
+      handleFilesAdded,
       uploadProgress,
       titleError,
       postBodyError,
       isLoading,
+      hasFileAdded,
+      identifier,
+      handleFileUploadSuccess,
+      alertClass,
+      alertMessage,
     };
   },
 };

@@ -20,48 +20,30 @@
         rows="3"
         v-model="postBody"
       ></textarea>
-      <div v-if="postBodyError" class="text-danger">
-        {{ postBodyError }}
-      </div>
+      <div v-if="postBodyError" class="text-danger">{{ postBodyError }}</div>
     </div>
-    <div class="form-group">
-      <label for="videoFile">Video File</label>
-      <input
-        type="file"
-        class="form-control-file"
-        id="videoFile"
-        @change="handleFileUpload"
-        accept="video/*"
-      />
-      <div v-if="videoFileError" class="text-danger">
-        {{ videoFileError }}
-      </div>
-    </div>
+
+    <DropzoneComponent
+      @files-added="handleFilesAdded"
+      @file-upload-success="handleFileUploadSuccess"
+      :identifier="identifier"
+    />
+    <div v-if="videoFileError" class="text-danger">{{ videoFileError }}</div>
 
     <div class="text-center mt-4">
       <div v-if="postError" class="text-danger">{{ postError }}</div>
       <button
         type="submit"
         class="btn btn-primary btn-lg"
-        :disabled="uploadProgress > 0"
+        :disabled="isLoading"
         style="padding-left: 2.5rem; padding-right: 2.5rem"
       >
-        <span v-if="uploadProgress > 0">Uploading...</span>
+        <span v-if="isLoading">Creating...</span>
         <span v-else>Create Post</span>
       </button>
     </div>
-
-    <div v-if="uploadProgress > 0" class="progress mt-3">
-      <div
-        class="progress-bar"
-        role="progressbar"
-        :style="{ width: uploadProgress + '%' }"
-        aria-valuenow="uploadProgress"
-        aria-valuemin="0"
-        aria-valuemax="100"
-      >
-        {{ uploadProgress }}%
-      </div>
+    <div class="alert" :class="alertClass" role="alert">
+      {{ alertMessage }}
     </div>
   </form>
 </template>
@@ -69,84 +51,86 @@
 <script>
 import { ref } from "vue";
 import http from "@/http";
-import { uploadVideoFile, handleFileChange } from "@/utils/videoUpload";
+import DropzoneComponent from "@/components/DropzoneComponent.vue";
 
 export default {
+  components: {
+    DropzoneComponent,
+  },
   setup() {
     const title = ref("");
     const postBody = ref("");
-    const videoFile = ref(null);
-    const videoFileError = ref("");
+    const identifier = ref(null);
     const titleError = ref("");
     const postBodyError = ref("");
+    const videoFileError = ref("");
     const postError = ref("");
-    const uploadProgress = ref(0);
     const isLoading = ref(false);
-    const identifier = ref(null);
-
-    const handleSubmit = async () => {
+    const hasFileAdded = ref(false);
+    const alertClass = ref("alert-default");
+    const alertMessage = ref("");
+    const validateForm = () => {
       titleError.value = "";
       postBodyError.value = "";
-      videoFileError.value = "";
-      postError.value = "";
-      isLoading.value = true;
+
       if (title.value.length === 0) {
         titleError.value = "Title is required";
-        isLoading.value = false;
-        return;
+        return false;
       }
 
       if (postBody.value.length === 0) {
         postBodyError.value = "Post Body is required";
+        return false;
+      }
+
+      if (!hasFileAdded.value) {
+        videoFileError.value = "Please select video";
+        return false;
+      }
+
+      return true;
+    };
+
+    const handleSubmit = async () => {
+      isLoading.value = true;
+
+      if (!validateForm()) {
         isLoading.value = false;
         return;
       }
 
-      if (videoFile.value == null) {
-        videoFileError.value = "Video File is required";
+      try {
+        const response = await http.post("/posts/my-posts/create", {
+          title: title.value,
+          post_body: postBody.value,
+        });
+        identifier.value = response.data.identifier;
+        alertMessage.value =
+          "Post created successfully! Video uploading is in-progress";
+        alertClass.value = "alert-info";
+        resetForm();
+      } catch (error) {
         isLoading.value = false;
-        return;
+        handlePostError(error);
       }
+    };
 
-      if (title.value && postBody.value && videoFile.value) {
-        try {
-          const response = await http.post("/posts/my-posts/create", {
-            title: title.value,
-            post_body: postBody.value,
-          });
-          identifier.value = response.data.identifier;
-          const fileUploadResponse = await uploadVideoFile(
-            identifier.value,
-            videoFile.value,
-            uploadProgress
-          );
-          if (fileUploadResponse) {
-            alert("Video Uploaded Successfully.");
-          }
+    const handleFilesAdded = async () => {
+      hasFileAdded.value = true;
+    };
 
-          title.value = "";
-          postBody.value = "";
-          videoFile.value = null;
-          isLoading.value = false;
-          uploadProgress.value = 0;
-        } catch (error) {
-          isLoading.value = false;
-          handlePostError(error);
-        }
-      }else{
-        isLoading.value = false;
-        postError.value = "All Field Required";
-      }
+    const handleFileUploadSuccess = async () => {
+      alertMessage.value = "Video Uploaded Successfully";
+      alertClass.value = "alert-success";
     };
 
     const handlePostError = (error) => {
       if (error.response && error.response.data) {
         const status = error.response.status;
-        if (status === 400 || status === 422) {
-          postError.value = extractErrorMessages(error.response.data.error);
-        } else {
-          postError.value = "An unexpected error occurred.";
-        }
+        postError.value =
+          status === 400 || status === 422
+            ? extractErrorMessages(error.response.data.error)
+            : "An unexpected error occurred.";
       } else {
         postError.value = error.message || "An unexpected error occurred.";
       }
@@ -156,8 +140,10 @@ export default {
       return Object.values(errors).flat().join(", ");
     };
 
-    const handleFileUpload = (event) => {
-      handleFileChange(event, videoFile, videoFileError);
+    const resetForm = () => {
+      title.value = "";
+      postBody.value = "";
+      isLoading.value = false;
     };
 
     return {
@@ -166,28 +152,20 @@ export default {
       titleError,
       postBodyError,
       postError,
-      videoFileError,
-      uploadProgress,
+      isLoading,
+      identifier,
       handleSubmit,
-      handleFileUpload,
-      extractErrorMessages,
-      isLoading
+      handleFilesAdded,
+      hasFileAdded,
+      videoFileError,
+      handleFileUploadSuccess,
+      alertClass,
+      alertMessage,
     };
   },
 };
 </script>
 
 <style>
-.text-danger {
-  color: red;
-}
-.progress {
-  height: 20px;
-}
-.form-group {
-  padding: 10px;
-}
-label{
-  padding: 2px;
-}
+/* Your existing styles */
 </style>
