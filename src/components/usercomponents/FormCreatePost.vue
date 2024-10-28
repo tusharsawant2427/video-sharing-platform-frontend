@@ -8,6 +8,7 @@
     submitButtonText="Create Post"
     @submitForm="handleCreatePost"
     @file-upload-success-message="handleFileUploadSuccess"
+    @file-upload-error-message="handleFileUploadErrors"
   />
 </template>
 
@@ -57,6 +58,12 @@ export default {
       alertClass.value = "alert-success";
     };
 
+    
+    const handleFileUploadErrors = (error) => {
+      alertMessage.value = error;
+      alertClass.value = "alert-danger";
+    };
+
     const extractErrorMessages = (errors) => {
       return Object.values(errors).flat().join(", ");
     };
@@ -69,7 +76,8 @@ export default {
       handleFileUploadSuccess,
       alertClass,
       alertMessage,
-      identifier
+      identifier,
+      handleFileUploadErrors
     };
   },
 };

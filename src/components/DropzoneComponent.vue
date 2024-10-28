@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import { onMounted, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import vueDropzone from "dropzone-vue3";
 import "dropzone/dist/dropzone.css";
 
@@ -60,15 +60,6 @@ export default {
       autoProcessQueue: props.isEdit,
       acceptedFiles: "video/*",
     });
-    onMounted(() => {
-      try {
-        const dropzone = myDropzone.value.dropzone;
-        dropzone.processQueue();
-      } catch (error) {
-        console.log(error);
-      }
-    });
-
     watch(
       () => props.identifier,
       (newIdentifier) => {
@@ -78,6 +69,9 @@ export default {
         dropzone.options.headers = {
           Authorization: `Bearer ${token}`,
         };
+        if(newIdentifier){
+          dropzone.options.autoProcessQueue = true; 
+        }
         dropzone.processQueue();
       }
     );
@@ -94,7 +88,7 @@ export default {
           ? Object.values(response.error).flat().join(", ")
           : errorMessage;
       } else if (typeof response === "string") {
-        errorMessage = response; 
+        errorMessage = response;
       }
 
       emit("file-upload-error", errorMessage);

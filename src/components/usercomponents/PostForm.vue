@@ -146,6 +146,7 @@ export default {
     };
 
     const handleFileUploadError = (error) => {
+      console.log("error"+error);
       emit("file-upload-error-message", error);
     };
 
