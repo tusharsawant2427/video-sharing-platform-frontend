@@ -1,6 +1,6 @@
 <template>
   <AppHeader></AppHeader>
-  <section>
+  <section class="min-vh-100">
     <div class="container-fluid h-custom">
       <slot></slot>
     </div>

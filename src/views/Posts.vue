@@ -2,88 +2,16 @@
   <AppLayout>
     <div class="container mt-5">
       <div class="row justify-content-center">
-        <div
+        <PostCard
           v-for="post in posts"
           :key="post.identifier"
-          class="col-md-8 mb-3"
-        >
-          <div class="card video-post">
-            <div class="card-header">
-              <h5 class="card-title">{{ post.title }}</h5>
-              <small class="text-muted">
-                Posted by {{ post.user.name }} on {{ formatDate(post.created_at) }}
-              </small>
-            </div>
-            <div class="card-body">
-              <div class="container mt-5">
-                <video
-                  ref="videoPlayer"
-                  :id="'video-' + index"
-                  class="video-js"
-                  controls
-                  preload="auto"
-                  width="600"
-                  height="300"
-                >
-                  <source :src="post.video_url" type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-              <p>{{ post.post_body }}</p>
-              <button
-                @click="toggleLikeDislike(post, 1)"
-                class="btn"
-                :class="likeClass(post)"
-              >
-                <span>{{ post.post_like_count > 0 ? post.post_like_count : 0 }} <i class="fas fa-thumbs-up"></i></span>
-              </button>
-              <button
-                @click="toggleLikeDislike(post, 0)"
-                class="btn"
-                :class="dislikeClass(post)"
-              >
-                <span>{{ post.post_dislike_count > 0 ? post.post_dislike_count : 0 }} <i class="fas fa-thumbs-down"></i></span>
-              </button>
-              <div class="mt-4">
-                <div class="input-group mb-3">
-                  <input
-                    v-model="newComment"
-                    type="text"
-                    class="form-control"
-                    placeholder="Add a comment..."
-                  />
-                  <button @click="postComment(post)" class="btn btn-secondary">
-                    Comment
-                  </button>
-                </div>
-                <h6>Comments:</h6>
-                <div id="commentsList" class="mb-3" style="max-height: 100px; overflow: auto">
-                  <div v-for="(postComment, index) in post.post_comments" :key="index" class="comment">
-                    <div class="d-grid">
-                      <div class="d-flex align-items-start">
-                        <span class="comment-author">{{ postComment.user.name }}:</span>
-                        <span class="comment-text">{{ postComment.comment }}</span>
-                      </div>
-                      <div class="text-end">
-                        <a href="javascript:void(0)" @click="toggleCommentLikeDislike(postComment, 1)" style="padding: 10px">
-                          <i class="fas fa-thumbs-up" :class="commentLikeClass(postComment)"></i>
-                        </a>
-                        <a href="javascript:void(0)" @click="toggleCommentLikeDislike(postComment, 0)" style="padding: 10px">
-                          <i class="fas fa-thumbs-down" :class="commentDislikeClass(postComment)"></i>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          :post="post"
+          @like="toggleLikeDislike"
+          @comment="postComment"
+        />
       </div>
-      <div v-if="loading" class="text-center mb-3">Loading more posts...</div>
-      <div v-if="!hasMorePosts && !loading" class="text-center mb-3">
-        No more posts to load.
-      </div>
+      <LoadingIndicator v-if="loading" />
+      <NoMorePosts v-if="!hasMorePosts && !loading" />
     </div>
   </AppLayout>
 </template>
@@ -94,13 +22,19 @@ import AppLayout from "../components/AppLayout.vue";
 import http from "@/http";
 import "video.js/dist/video-js.css";
 import videojs from "video.js";
+import LoadingIndicator from "./LoadingIndicator.vue";
+import NoMorePosts from "./NoMorePosts.vue";
+import PostCard from "./PostCard.vue";
 
 export default {
   name: "AppPosts",
   components: {
     AppLayout,
+    PostCard,
+    LoadingIndicator,
+    NoMorePosts,
   },
-  setup() {
+  setup(props, { emit }) {
     const posts = ref([]);
     const comments = ref([]);
     const newComment = ref("");
@@ -143,7 +77,6 @@ export default {
     onMounted(() => {
       fetchPosts();
       window.addEventListener("scroll", onScroll);
-      // Initialize video player only if there is a valid video player reference
       if (videoPlayer.value) {
         player = videojs(videoPlayer.value);
       }
@@ -153,7 +86,7 @@ export default {
       if (player) {
         player.dispose();
       }
-      window.removeEventListener("scroll", onScroll); // Clean up scroll listener
+      window.removeEventListener("scroll", onScroll);
     });
 
     const toggleLikeDislike = async (post, liked) => {
@@ -205,6 +138,10 @@ export default {
       } catch (error) {
         console.error("Error toggling like/dislike:", error);
       }
+    };
+
+    const handleComment = (comment) => {
+      emit("comment", comment);
     };
 
     const postComment = async (post) => {
@@ -260,6 +197,7 @@ export default {
       commentDislikeClass,
       toggleCommentLikeDislike,
       videoPlayer,
+      handleComment,
     };
   },
 };

@@ -1,6 +1,16 @@
 <template>
   <form @submit.prevent="handleSubmit">
-    <!-- Email input -->
+    <div class="form-outline mb-4">
+      <input
+        type="name"
+        id="name"
+        class="form-control form-control-lg"
+        placeholder="Full name"
+        v-model="name"
+      />
+      <div v-if="nameError" class="text-danger">{{ nameError }}</div>
+    </div>
+
     <div class="form-outline mb-4">
       <input
         type="email"
@@ -23,56 +33,48 @@
       <div v-if="passwordError" class="text-danger">{{ passwordError }}</div>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center">
-      <div class="form-check mb-0">
-        <input
-          class="form-check-input me-2"
-          type="checkbox"
-          value=""
-          id="form2Example3"
-        />
-        <label class="form-check-label" for="form2Example3">
-          Remember me
-        </label>
-      </div>
-    </div>
-
     <div class="text-center text-lg-start mt-4 pt-2">
-      <div v-if="loginError" class="text-danger">{{ loginError }}</div>
+      <div v-if="registrationError" class="text-danger">
+        {{ registrationError }}
+      </div>
+
       <button
         type="submit"
         class="btn btn-primary btn-lg"
-        :disabled="isLoading"
         style="padding-left: 2.5rem; padding-right: 2.5rem"
+        :disabled="isLoading"
       >
-        <span
-          v-if="isLoading"
-          class="spinner-border spinner-border-sm"
-          role="status"
-          aria-hidden="true"
-        ></span>
-        Login
+        <LoadingSpinner :isLoading="isLoading" />
+
+        Register
       </button>
       <p class="small fw-bold mt-2 pt-1 mb-0">
-        Don't have an account?
-        <a href="/register" class="link-danger">Register</a>
+        Already have an account
+        <a href="/login" class="link-danger">Login</a>
       </p>
     </div>
   </form>
 </template>
 
 <script>
+import { ref } from "vue";
+import "../../assets/css/login.css";
 import http from "@/http";
 import router from "@/router";
-import { ref } from "vue";
+import LoadingSpinner from "../common/LoadingSpinner.vue";
 
 export default {
+  components: {
+    LoadingSpinner,
+  },
   setup() {
+    const name = ref("");
     const email = ref("");
     const password = ref("");
+    const nameError = ref("");
     const emailError = ref("");
     const passwordError = ref("");
-    const loginError = ref("");
+    const registrationError = ref("");
     const isLoading = ref(false);
 
     const validateEmail = (emailValue) => {
@@ -85,37 +87,72 @@ export default {
       if (!validateEmail(email.value)) {
         emailError.value = "Please enter valid email address.";
         isLoading.value = false;
-        return;
       } else {
         emailError.value = "";
       }
+
       if (password.value.length < 6) {
         passwordError.value = "Password must be at least 6 characters long.";
         isLoading.value = false;
       } else {
         passwordError.value = "";
       }
-      if (!emailError.value && !passwordError.value) {
+      if (name.value.length <= 0) {
+        nameError.value = "Name Required";
+        isLoading.value = false;
+      } else {
+        nameError.value = "";
+      }
+      if (email.value && password.value && name.value) {
         try {
-          const response = await http.post("/users/login", {
+          const response = await http.post("/users/register", {
             email: email.value,
             password: password.value,
+            name: name.value,
           });
           localStorage.setItem("jwtToken", response.data.token);
-          router.push("/");
+          router.push("/my-posts");
         } catch (error) {
-          loginError.value = error.message;
+          if (error.status == 400) {
+            if (error.response && error.response.data) {
+              registrationError.value = extractErrorMessages(
+                error.response.data.error
+              );
+            } else {
+              registrationError.value = "An unexpected error occurred.";
+            }
+          } else if (error.status == 422) {
+            if (error.response && error.response.data) {
+              registrationError.value = error.response.data.data;
+            } else {
+              registrationError.value = "An unexpected error occurred.";
+            }
+          } else {
+            registrationError.value = error.message;
+          }
           isLoading.value = false;
         }
+        isLoading.value = false;
+      } else {
+        registrationError.value = "All Field Required";
+        isLoading.value = false;
+        return;
       }
     };
 
+    const extractErrorMessages = (errors) => {
+      return Object.values(errors).flat().join(", ");
+    };
+
     return {
+      name,
       email,
       password,
+      nameError,
       emailError,
       passwordError,
-      loginError,
+      registrationError,
+      validateEmail,
       handleSubmit,
       isLoading,
     };

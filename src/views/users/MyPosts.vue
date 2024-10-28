@@ -5,7 +5,7 @@
         <div
           v-for="post in posts"
           :key="post.identifier"
-          class="card video-post mb-2"
+          class="card my-video-post mb-2"
         >
           <div class="card-header">
             <h5 class="card-title">{{ trimText(post.title, 30) }}</h5>
@@ -59,7 +59,7 @@
 
 <script>
 import { ref, onMounted, onBeforeUnmount } from "vue";
-import AppLayout from "../components/AppLayout.vue";
+import AppLayout from "../../components/AppLayout.vue";
 import http from "@/http";
 import "video.js/dist/video-js.css";
 import videojs from "video.js";
@@ -181,7 +181,7 @@ export default {
   justify-content: center;
 }
 
-.video-post {
+.my-video-post {
   flex: 1 1 calc(44.44% - 20px);
   margin: 10px;
   max-width: 300px;

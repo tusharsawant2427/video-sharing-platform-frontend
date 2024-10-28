@@ -24,12 +24,7 @@
     </div>
     <div class="text-center mt-4">
       <button type="submit" class="btn btn-primary" :disabled="isLoading">
-        <span
-          v-if="isLoading"
-          class="spinner-border spinner-border-sm"
-          role="status"
-          aria-hidden="true"
-        ></span>
+        <LoadingSpinner :isLoading="isLoading" /> 
         <span v-if="!isLoading">Update Profile</span>
         <span v-else>Updating...</span>
       </button>
@@ -41,9 +36,13 @@
 <script>
 import { ref, onMounted } from "vue";
 import http from "@/http";
+import LoadingSpinner from "../common/LoadingSpinner.vue";
 
 export default {
   name: "ProfileUpdate",
+  components: {
+    LoadingSpinner
+  },
   setup() {
     const user = ref({ name: "", email: "" });
     const nameError = ref("");

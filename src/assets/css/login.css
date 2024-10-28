@@ -13,3 +13,12 @@
     height: 100%;
   }
 }
+
+.form-group {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+label {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
