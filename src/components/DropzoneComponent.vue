@@ -30,7 +30,9 @@ import "dropzone/dist/dropzone.css";
 import { useStore } from "vuex";
 
 const CHUNK_SIZE = 5 * 1024 * 1024;
-
+const ALERT_SUCCESS = 'alert-success';
+const ALERT_DANGER = 'alert-danger';
+const ALERT_INFO = 'alert-success';
 export default {
   components: {
     vueDropzone,
@@ -80,7 +82,7 @@ export default {
 
     const handleSuccess = () => {
       store.dispatch("setAlert", {
-        alertClass: "alert-success",
+        alertClass: ALERT_SUCCESS,
         alertMessage: "File uploaded successfully.",
       });
     };
@@ -97,7 +99,7 @@ export default {
       }
 
       store.dispatch("setAlert", {
-        alertClass: "alert-danger",
+        alertClass: ALERT_DANGER,
         alertMessage: errorMessage,
       });
     };
@@ -105,7 +107,7 @@ export default {
     const handleFilesAdded = () => {
       if (props.identifier) {
         store.dispatch("setAlert", {
-          alertClass: "alert-info",
+          alertClass: ALERT_INFO,
           alertMessage: "Video Uploading In-Progress...",
         });
       }

@@ -39,7 +39,7 @@
         style="padding-left: 2.5rem; padding-right: 2.5rem"
       >
         <LoadingSpinner :isLoading="isLoading" />
-        <span v-if="isLoading">Creating...</span>
+        <span v-if="isLoading"></span>
         <span v-else>{{ submitButtonText }}</span>
       </button>
     </div>
@@ -88,6 +88,10 @@ export default {
       type: String,
       default: "",
     },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   setup(props, { emit }) {
     const identifier = ref(props.postIdentifier);
@@ -96,7 +100,7 @@ export default {
     const titleError = ref("");
     const postBodyError = ref("");
     const videoFileError = ref("");
-    const isLoading = ref(false);
+    const isLoading = ref(props.disabled);
     const hasFileAdded = ref(false);
     const validateForm = () => {
       titleError.value = "";
@@ -131,6 +135,12 @@ export default {
       ([newIdentifier]) => {
         identifier.value = newIdentifier;
         console.log("Updated identifier:", newIdentifier);
+      }
+    );
+    watch(
+      () => [props.disabled],
+      ([newDisabled]) => {
+        isLoading.value = newDisabled;
       }
     );
 

@@ -6,6 +6,7 @@
     :postIdentifier="post.identifier"
     :alertClass="alertClass"
     :alertMessage="alertMessage"
+    :disabled = "disabled"
     submitButtonText="Update Post"
     @submitForm="handleUpdatePost"
     @file-added="handleFilesAdded"
@@ -19,6 +20,9 @@ import { useRoute } from "vue-router";
 import PostForm from "./PostForm.vue";
 import { useStore } from 'vuex'; 
 
+const ALERT_SUCCESS = 'alert-success';
+const ALERT_DANGER = 'alert-danger';
+
 export default {
   components: {
     PostForm,
@@ -30,9 +34,9 @@ export default {
     const post = ref({ title: null, post_body: null });
     const alertClass = computed(() => store.state.alertClass);
     const alertMessage = computed(() => store.state.alertMessage);
-    const identifier = ref(postId);
     const initialTitle = ref(null);
     const initialPostBody = ref(null);
+    const disabled = ref(true);
 
     const fetchPost = async () => {
       const response = await http.get(`/posts/my-posts/${postId}/edit`);
@@ -40,19 +44,20 @@ export default {
       post.value = response.data;
       initialTitle.value = post.value.title;
       initialPostBody.value = post.value.post_body;
+      disabled.value = false;
     };
 
     const handleUpdatePost = async (formData) => {
       try {
         await http.put(`/posts/my-posts/${postId}/update`, formData);
-        store.dispatch('setAlert', { alertClass: 'alert-success', alertMessage: 'Post updated successfully' });
+        store.dispatch('setAlert', { alertClass: ALERT_SUCCESS, alertMessage: 'Post updated successfully' });
       } catch (error) {
         handlePostError(error);
       }
     };
 
     const handlePostError = (error) => {
-      const alertClass = 'alert-danger';
+      const alertClass = ALERT_DANGER;
       let alertMessage = "An unexpected error occurred.";
       if (error.response && error.response.data) {
         const status = error.response.status;
@@ -76,10 +81,10 @@ export default {
       handleUpdatePost,
       alertClass,
       alertMessage,
-      identifier,
       handlePostError,
       initialTitle,
       initialPostBody,
+      disabled
     };
   },
 };

@@ -15,6 +15,8 @@ import { computed, ref } from "vue";
 import http from "@/http";
 import PostForm from "./PostForm.vue";
 import { useStore } from "vuex";
+const ALERT_DANGER = 'alert-danger';
+const ALERT_INFO = 'alert-success';
 
 export default {
   components: {
@@ -33,7 +35,7 @@ export default {
         const response = await http.post("/posts/my-posts/create", formData);
         identifier.value = response.data.identifier;
         store.dispatch("setAlert", {
-          alertClass: "alert-info",
+          alertClass: ALERT_INFO,
           alertMessage:
             "Post created successfully! Video Uploading In-Progress",
         });
@@ -43,7 +45,7 @@ export default {
     };
 
     const handlePostError = (error) => {
-      const alertClass = "alert-danger";
+      const alertClass = ALERT_DANGER;
       let alertMessage = "An unexpected error occurred.";
       if (error.response && error.response.data) {
         const status = error.response.status;
