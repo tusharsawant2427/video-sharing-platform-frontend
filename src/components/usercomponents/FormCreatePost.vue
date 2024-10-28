@@ -4,64 +4,57 @@
     :initialPostBody="postBody"
     :alertClass="alertClass"
     :alertMessage="alertMessage"
-    :postIdentifier = "identifier"
+    :postIdentifier="identifier"
     submitButtonText="Create Post"
     @submitForm="handleCreatePost"
-    @file-upload-success-message="handleFileUploadSuccess"
-    @file-upload-error-message="handleFileUploadErrors"
   />
 </template>
 
 <script>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import http from "@/http";
 import PostForm from "./PostForm.vue";
+import { useStore } from "vuex";
 
 export default {
   components: {
     PostForm,
   },
   setup() {
+    const store = useStore();
     const title = ref("");
     const postBody = ref("");
-    const alertClass = ref("alert-default");
-    const alertMessage = ref("");
+    const alertClass = computed(() => store.state.alertClass);
+    const alertMessage = computed(() => store.state.alertMessage);
     const identifier = ref(null);
-    
+
     const handleCreatePost = async (formData) => {
       try {
         const response = await http.post("/posts/my-posts/create", formData);
         identifier.value = response.data.identifier;
-        alertClass.value = "alert-success";
-        alertMessage.value = "Post created successfully! Video Uploading In-Progress";
+        store.dispatch("setAlert", {
+          alertClass: "alert-info",
+          alertMessage:
+            "Post created successfully! Video Uploading In-Progress",
+        });
       } catch (error) {
         handlePostError(error);
       }
     };
 
     const handlePostError = (error) => {
-      alertClass.value = "alert-danger";
+      const alertClass = "alert-danger";
+      let alertMessage = "An unexpected error occurred.";
       if (error.response && error.response.data) {
         const status = error.response.status;
-        alertMessage.value  =
+        alertMessage =
           status === 400 || status === 422
             ? extractErrorMessages(error.response.data.error)
-            : "An unexpected error occurred.";
+            : alertMessage;
       } else {
-        alertMessage.value = error.message || "An unexpected error occurred.";
+        alertMessage = error.message || alertMessage;
       }
-    };
-
-    
-    const handleFileUploadSuccess = () => {
-      alertMessage.value = "Video Uploaded Successfully";
-      alertClass.value = "alert-success";
-    };
-
-    
-    const handleFileUploadErrors = (error) => {
-      alertMessage.value = error;
-      alertClass.value = "alert-danger";
+      store.dispatch("setAlert", { alertClass, alertMessage });
     };
 
     const extractErrorMessages = (errors) => {
@@ -73,11 +66,9 @@ export default {
       postBody,
       handleCreatePost,
       handlePostError,
-      handleFileUploadSuccess,
       alertClass,
       alertMessage,
       identifier,
-      handleFileUploadErrors
     };
   },
 };

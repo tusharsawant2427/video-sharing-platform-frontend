@@ -25,8 +25,6 @@
 
     <DropzoneComponent
       @files-added="handleFilesAdded"
-      @file-upload-success="handleFileUploadSuccess"
-      @file-upload-error="handleFileUploadError"
       :identifier="identifier"
       :isEdit="isEditMode"
     />
@@ -141,15 +139,6 @@ export default {
       emit("file-added");
     };
 
-    const handleFileUploadSuccess = () => {
-      emit("file-upload-success-message");
-    };
-
-    const handleFileUploadError = (error) => {
-      console.log("error"+error);
-      emit("file-upload-error-message", error);
-    };
-
     const handleSubmit = async () => {
       isLoading.value = true;
       if (!validateForm()) {
@@ -178,8 +167,6 @@ export default {
       isLoading,
       videoFileError,
       handleFilesAdded,
-      handleFileUploadSuccess,
-      handleFileUploadError,
       handleSubmit,
       identifier,
     };

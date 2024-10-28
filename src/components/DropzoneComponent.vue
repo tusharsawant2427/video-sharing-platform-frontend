@@ -27,6 +27,7 @@
 import { ref, watch } from "vue";
 import vueDropzone from "dropzone-vue3";
 import "dropzone/dist/dropzone.css";
+import { useStore } from "vuex";
 
 const CHUNK_SIZE = 5 * 1024 * 1024;
 
@@ -46,6 +47,7 @@ export default {
     },
   },
   setup(props, { emit }) {
+    const store = useStore();
     const myDropzone = ref(null);
     const dropzoneOptions = ref({
       url: "/",
@@ -69,15 +71,18 @@ export default {
         dropzone.options.headers = {
           Authorization: `Bearer ${token}`,
         };
-        if(newIdentifier){
-          dropzone.options.autoProcessQueue = true; 
+        if (newIdentifier) {
+          dropzone.options.autoProcessQueue = true;
         }
         dropzone.processQueue();
       }
     );
 
     const handleSuccess = () => {
-      emit("file-upload-success");
+      store.dispatch("setAlert", {
+        alertClass: "alert-success",
+        alertMessage: "File uploaded successfully.",
+      });
     };
 
     const handleError = (file, response) => {
@@ -91,10 +96,19 @@ export default {
         errorMessage = response;
       }
 
-      emit("file-upload-error", errorMessage);
+      store.dispatch("setAlert", {
+        alertClass: "alert-danger",
+        alertMessage: errorMessage,
+      });
     };
 
     const handleFilesAdded = () => {
+      if (props.identifier) {
+        store.dispatch("setAlert", {
+          alertClass: "alert-info",
+          alertMessage: "Video Uploading In-Progress...",
+        });
+      }
       emit("files-added");
     };
 
