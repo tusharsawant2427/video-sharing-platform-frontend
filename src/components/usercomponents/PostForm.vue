@@ -26,6 +26,7 @@
     <DropzoneComponent
       @files-added="handleFilesAdded"
       @file-upload-success="handleFileUploadSuccess"
+      @file-upload-error="handleFileUploadError"
       :identifier="identifier"
       :isEdit="isEditMode"
     />
@@ -58,7 +59,7 @@ import LoadingSpinner from "../common/LoadingSpinner.vue";
 export default {
   components: {
     DropzoneComponent,
-    LoadingSpinner
+    LoadingSpinner,
   },
   props: {
     postIdentifier: {
@@ -144,6 +145,10 @@ export default {
       emit("file-upload-success-message");
     };
 
+    const handleFileUploadError = (error) => {
+      emit("file-upload-error-message", error);
+    };
+
     const handleSubmit = async () => {
       isLoading.value = true;
       if (!validateForm()) {
@@ -173,6 +178,7 @@ export default {
       videoFileError,
       handleFilesAdded,
       handleFileUploadSuccess,
+      handleFileUploadError,
       handleSubmit,
       identifier,
     };

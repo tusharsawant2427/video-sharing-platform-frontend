@@ -58,10 +58,15 @@ export default {
       retryChunksLimit: 3,
       addRemoveLinks: true,
       autoProcessQueue: props.isEdit,
+      acceptedFiles: "video/*",
     });
     onMounted(() => {
-      const dropzone = myDropzone.value.dropzone;
-      dropzone.processQueue();
+      try {
+        const dropzone = myDropzone.value.dropzone;
+        dropzone.processQueue();
+      } catch (error) {
+        console.log(error);
+      }
     });
 
     watch(
@@ -82,7 +87,17 @@ export default {
     };
 
     const handleError = (file, response) => {
-      console.error("File upload error:", response);
+      let errorMessage = "An unknown error occurred.";
+
+      if (response && typeof response === "object") {
+        errorMessage = response.error
+          ? Object.values(response.error).flat().join(", ")
+          : errorMessage;
+      } else if (typeof response === "string") {
+        errorMessage = response; 
+      }
+
+      emit("file-upload-error", errorMessage);
     };
 
     const handleFilesAdded = () => {

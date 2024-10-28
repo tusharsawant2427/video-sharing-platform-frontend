@@ -2,7 +2,7 @@
   <form @submit.prevent="handleSubmit">
     <div class="form-outline mb-4">
       <input
-        type="name"
+        type="text"
         id="name"
         class="form-control form-control-lg"
         placeholder="Full name"
@@ -45,9 +45,9 @@
         :disabled="isLoading"
       >
         <LoadingSpinner :isLoading="isLoading" />
-
         Register
       </button>
+
       <p class="small fw-bold mt-2 pt-1 mb-0">
         Already have an account
         <a href="/login" class="link-danger">Login</a>
@@ -58,15 +58,14 @@
 
 <script>
 import { ref } from "vue";
-import "../../assets/css/login.css";
 import http from "@/http";
 import router from "@/router";
 import LoadingSpinner from "../common/LoadingSpinner.vue";
+import "../../assets/css/login.css";
 
 export default {
-  components: {
-    LoadingSpinner,
-  },
+  components: { LoadingSpinner },
+
   setup() {
     const name = ref("");
     const email = ref("");
@@ -77,66 +76,60 @@ export default {
     const registrationError = ref("");
     const isLoading = ref(false);
 
-    const validateEmail = (emailValue) => {
-      const reg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return reg.test(emailValue);
+    const validateEmail = (emailValue) =>
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+
+    const validateFields = () => {
+      nameError.value = name.value ? "" : "Name Required";
+      emailError.value = validateEmail(email.value)
+        ? ""
+        : "Please enter valid email address.";
+      passwordError.value =
+        password.value.length >= 6
+          ? ""
+          : "Password must be at least 6 characters long.";
+
+      return !nameError.value && !emailError.value && !passwordError.value;
     };
 
     const handleSubmit = async () => {
       isLoading.value = true;
-      if (!validateEmail(email.value)) {
-        emailError.value = "Please enter valid email address.";
-        isLoading.value = false;
-      } else {
-        emailError.value = "";
-      }
-
-      if (password.value.length < 6) {
-        passwordError.value = "Password must be at least 6 characters long.";
-        isLoading.value = false;
-      } else {
-        passwordError.value = "";
-      }
-      if (name.value.length <= 0) {
-        nameError.value = "Name Required";
-        isLoading.value = false;
-      } else {
-        nameError.value = "";
-      }
-      if (email.value && password.value && name.value) {
-        try {
-          const response = await http.post("/users/register", {
-            email: email.value,
-            password: password.value,
-            name: name.value,
-          });
-          localStorage.setItem("jwtToken", response.data.token);
-          router.push("/my-posts");
-        } catch (error) {
-          if (error.status == 400) {
-            if (error.response && error.response.data) {
-              registrationError.value = extractErrorMessages(
-                error.response.data.error
-              );
-            } else {
-              registrationError.value = "An unexpected error occurred.";
-            }
-          } else if (error.status == 422) {
-            if (error.response && error.response.data) {
-              registrationError.value = error.response.data.data;
-            } else {
-              registrationError.value = "An unexpected error occurred.";
-            }
-          } else {
-            registrationError.value = error.message;
-          }
-          isLoading.value = false;
-        }
-        isLoading.value = false;
-      } else {
-        registrationError.value = "All Field Required";
+      registrationError.value = "";
+      console.log(validateFields());
+      if (!validateFields()) {
+        registrationError.value = "All fields are required.";
         isLoading.value = false;
         return;
+      }
+
+      try {
+        const response = await http.post("/users/register", {
+          email: email.value,
+          password: password.value,
+          name: name.value,
+        });
+        localStorage.setItem("jwtToken", response.data.token);
+        router.push("/my-posts");
+      } catch (error) {
+        handleError(error);
+      } finally {
+        isLoading.value = false;
+      }
+    };
+
+    const handleError = (error) => {
+      if (error.response) {
+        const status = error.response.status;
+        registrationError.value = extractErrorMessages(
+          error.response.data.error || {}
+        );
+        if (status === 422) {
+          registrationError.value =
+            error.response.data.data || "An unexpected error occurred.";
+        }
+      } else {
+        registrationError.value =
+          error.message || "An unexpected error occurred.";
       }
     };
 
@@ -152,7 +145,6 @@ export default {
       emailError,
       passwordError,
       registrationError,
-      validateEmail,
       handleSubmit,
       isLoading,
     };
@@ -164,9 +156,6 @@ export default {
 .bd-placeholder-img {
   font-size: 1.125rem;
   text-anchor: middle;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   user-select: none;
 }
 
