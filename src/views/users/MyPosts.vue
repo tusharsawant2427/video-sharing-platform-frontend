@@ -59,7 +59,7 @@
 
 <script>
 import { ref, onMounted, onBeforeUnmount } from "vue";
-import AppLayout from "../components/AppLayout.vue";
+import AppLayout from "../../components/AppLayout.vue";
 import http from "@/http";
 import "video.js/dist/video-js.css";
 import videojs from "video.js";

@@ -28,7 +28,7 @@ import { onMounted, ref, watch } from "vue";
 import vueDropzone from "dropzone-vue3";
 import "dropzone/dist/dropzone.css";
 
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+const CHUNK_SIZE = 5 * 1024 * 1024;
 
 export default {
   components: {
@@ -47,7 +47,6 @@ export default {
   },
   setup(props, { emit }) {
     const myDropzone = ref(null);
-   
     const dropzoneOptions = ref({
       url: "/",
       maxFilesize: 500,
@@ -95,7 +94,7 @@ export default {
       dropzoneOptions,
       handleSuccess,
       handleError,
-      handleFilesAdded
+      handleFilesAdded,
     };
   },
 };

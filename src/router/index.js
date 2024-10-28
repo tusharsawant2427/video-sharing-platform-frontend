@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
-import FormLogin from "@/views/UserLogin.vue";
-import RegisterForm from "@/views/UserRegister.vue";
+import FormLogin from "@/views/users/UserLogin.vue";
+import RegisterForm from "@/views/users/UserRegister.vue";
 import Posts from "@/views/Posts.vue";
-import CreatePost from "@/views/CreatePost.vue";
-import EditPost from "@/views/EditPost.vue";
-import MyPosts from "@/views/MyPosts.vue";
+import CreatePost from "@/views/users/CreatePost.vue";
+import EditPost from "@/views/users/EditPost.vue";
+import MyPosts from "@/views/users/MyPosts.vue";
 import { jwtDecode } from "jwt-decode";
-import UpdateProfile from "@/views/UpdateProfile.vue";
+import UpdateProfile from "@/views/users/UpdateProfile.vue";
 import NotFound from "@/views/NotFound.vue";
 
 const routes = [

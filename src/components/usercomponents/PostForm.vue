@@ -6,12 +6,12 @@
         type="text"
         class="form-control"
         id="title"
-        name="title"
-        placeholder="Post Title"
         v-model="title"
+        placeholder="Post Title"
       />
       <div v-if="titleError" class="text-danger">{{ titleError }}</div>
     </div>
+
     <div class="form-group">
       <label for="postBody">Post Body</label>
       <textarea
@@ -27,6 +27,7 @@
       @files-added="handleFilesAdded"
       @file-upload-success="handleFileUploadSuccess"
       :identifier="identifier"
+      :isEdit="isEditMode"
     />
     <div v-if="videoFileError" class="text-danger">{{ videoFileError }}</div>
 
@@ -38,8 +39,9 @@
         :disabled="isLoading"
         style="padding-left: 2.5rem; padding-right: 2.5rem"
       >
+        <LoadingSpinner :isLoading="isLoading" />
         <span v-if="isLoading">Creating...</span>
-        <span v-else>Create Post</span>
+        <span v-else>{{ submitButtonText }}</span>
       </button>
     </div>
     <div class="alert" :class="alertClass" role="alert">
@@ -49,95 +51,111 @@
 </template>
 
 <script>
-import { ref } from "vue";
-import http from "@/http";
+import { ref, watch } from "vue";
 import DropzoneComponent from "@/components/DropzoneComponent.vue";
+import LoadingSpinner from "../common/LoadingSpinner.vue";
 
 export default {
   components: {
     DropzoneComponent,
+    LoadingSpinner
   },
-  setup() {
-    const title = ref("");
-    const postBody = ref("");
-    const identifier = ref(null);
+  props: {
+    postIdentifier: {
+      type: String,
+      default: null,
+    },
+    initialTitle: {
+      type: String,
+      default: "",
+    },
+    initialPostBody: {
+      type: String,
+      default: "",
+    },
+    submitButtonText: {
+      type: String,
+      default: "Submit",
+    },
+    isEditMode: {
+      type: Boolean,
+      default: false,
+    },
+    alertClass: {
+      type: String,
+      default: "",
+    },
+    alertMessage: {
+      type: String,
+      default: "",
+    },
+  },
+  setup(props, { emit }) {
+    const identifier = ref(props.postIdentifier);
+    const title = ref(props.initialTitle);
+    const postBody = ref(props.initialPostBody);
     const titleError = ref("");
     const postBodyError = ref("");
     const videoFileError = ref("");
-    const postError = ref("");
     const isLoading = ref(false);
     const hasFileAdded = ref(false);
-    const alertClass = ref("alert-default");
-    const alertMessage = ref("");
     const validateForm = () => {
       titleError.value = "";
       postBodyError.value = "";
-
-      if (title.value.length === 0) {
+      videoFileError.value = "";
+      if (!title.value) {
         titleError.value = "Title is required";
         return false;
       }
 
-      if (postBody.value.length === 0) {
+      if (!postBody.value) {
         postBodyError.value = "Post Body is required";
         return false;
       }
-
-      if (!hasFileAdded.value) {
-        videoFileError.value = "Please select video";
+      if (!hasFileAdded.value && !props.isEditMode) {
+        videoFileError.value = "Please select a video";
         return false;
       }
 
       return true;
     };
 
+    watch(
+      () => [props.initialTitle, props.initialPostBody],
+      ([newTitle, newPostBody]) => {
+        title.value = newTitle;
+        postBody.value = newPostBody;
+      }
+    );
+    watch(
+      () => [props.postIdentifier],
+      ([newIdentifier]) => {
+        identifier.value = newIdentifier;
+        console.log("Updated identifier:", newIdentifier);
+      }
+    );
+
+    const handleFilesAdded = () => {
+      hasFileAdded.value = true;
+      emit("file-added");
+    };
+
+    const handleFileUploadSuccess = () => {
+      emit("file-upload-success-message");
+    };
+
     const handleSubmit = async () => {
       isLoading.value = true;
-
       if (!validateForm()) {
         isLoading.value = false;
         return;
-      }
-
-      try {
-        const response = await http.post("/posts/my-posts/create", {
-          title: title.value,
-          post_body: postBody.value,
-        });
-        identifier.value = response.data.identifier;
-        alertMessage.value =
-          "Post created successfully! Video uploading is in-progress";
-        alertClass.value = "alert-info";
-        resetForm();
-      } catch (error) {
-        isLoading.value = false;
-        handlePostError(error);
-      }
-    };
-
-    const handleFilesAdded = async () => {
-      hasFileAdded.value = true;
-    };
-
-    const handleFileUploadSuccess = async () => {
-      alertMessage.value = "Video Uploaded Successfully";
-      alertClass.value = "alert-success";
-    };
-
-    const handlePostError = (error) => {
-      if (error.response && error.response.data) {
-        const status = error.response.status;
-        postError.value =
-          status === 400 || status === 422
-            ? extractErrorMessages(error.response.data.error)
-            : "An unexpected error occurred.";
       } else {
-        postError.value = error.message || "An unexpected error occurred.";
+        emit("submitForm", { title: title.value, post_body: postBody.value });
+        if (!props.isEditMode) {
+          resetForm();
+        }
+        isLoading.value = false;
       }
-    };
-
-    const extractErrorMessages = (errors) => {
-      return Object.values(errors).flat().join(", ");
     };
 
     const resetForm = () => {
@@ -151,16 +169,12 @@ export default {
       postBody,
       titleError,
       postBodyError,
-      postError,
       isLoading,
-      identifier,
-      handleSubmit,
-      handleFilesAdded,
-      hasFileAdded,
       videoFileError,
+      handleFilesAdded,
       handleFileUploadSuccess,
-      alertClass,
-      alertMessage,
+      handleSubmit,
+      identifier,
     };
   },
 };

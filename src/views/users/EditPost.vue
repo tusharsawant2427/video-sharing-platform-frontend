@@ -12,9 +12,9 @@
 </template>
 
 <script>
-import FormEditPost from "@/components/FormEditPost.vue";
-import "../assets/css/login.css";
-import AppLayout from "../components/AppLayout.vue";
+import FormEditPost from "@/components/usercomponents/FormEditPost.vue";
+import "../../assets/css/login.css";
+import AppLayout from "../../components/AppLayout.vue";
 
 export default {
   name: "EditPost",

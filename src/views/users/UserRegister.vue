@@ -12,26 +12,25 @@
         <div
           class="d-flex flex-row align-items-center justify-content-center justify-content-lg-start"
         >
-          <p class="lead fw-normal mb-0 me-3 text-centre">Login</p>
+          <p class="lead fw-normal mb-0 me-3">Register</p>
         </div>
 
-        <div class="divider d-flex align-items-center my-4">
-        </div>
-        <FormLogin />
+        <div class="divider d-flex align-items-center my-4"></div>
+        <FormRegister />
       </div>
     </div>
   </AppLayout>
 </template>
 
 <script>
-import "../assets/css/login.css";
-import AppLayout from "../components/AppLayout.vue";
-import FormLogin from "../components/FormLogin.vue";
+import "../../assets/css/login.css";
+import AppLayout from "../../components/AppLayout.vue";
+import FormRegister from "../../components/usercomponents/FormRegister.vue";
 
 export default {
-  name: "UserLogin",
+  name: "UserRegistration",
   components: {
-    FormLogin,
+    FormRegister,
     AppLayout,
   },
 };
