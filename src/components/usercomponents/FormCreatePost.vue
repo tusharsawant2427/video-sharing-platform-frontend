@@ -39,6 +39,7 @@ export default {
           alertMessage:
             "Post created successfully! Video Uploading In-Progress",
         });
+        store.dispatch("setCanUpload", true);
       } catch (error) {
         handlePostError(error);
       }

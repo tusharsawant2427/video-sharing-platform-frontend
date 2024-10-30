@@ -24,15 +24,15 @@
 </template>
 
 <script>
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import vueDropzone from "dropzone-vue3";
 import "dropzone/dist/dropzone.css";
 import { useStore } from "vuex";
 
 const CHUNK_SIZE = 5 * 1024 * 1024;
-const ALERT_SUCCESS = 'alert-success';
-const ALERT_DANGER = 'alert-danger';
-const ALERT_INFO = 'alert-success';
+const ALERT_SUCCESS = "alert-success";
+const ALERT_DANGER = "alert-danger";
+const ALERT_INFO = "alert-success";
 export default {
   components: {
     vueDropzone,
@@ -51,6 +51,8 @@ export default {
   setup(props, { emit }) {
     const store = useStore();
     const myDropzone = ref(null);
+    const canUploadFile = computed(() => store.state.canUploadFile);
+    const hasFileAdded = ref(false);
     const dropzoneOptions = ref({
       url: "/",
       maxFilesize: 500,
@@ -61,22 +63,26 @@ export default {
       retryChunks: true,
       retryChunksLimit: 3,
       addRemoveLinks: true,
-      autoProcessQueue: props.isEdit,
+      autoProcessQueue: false,
       acceptedFiles: "video/*",
     });
     watch(
-      () => props.identifier,
-      (newIdentifier) => {
-        const dropzone = myDropzone.value.dropzone;
-        dropzone.options.url = `${process.env.VUE_APP_API_BASE_URL}/posts/my-posts/${newIdentifier}/upload-video`;
-        const token = localStorage.getItem("jwtToken");
-        dropzone.options.headers = {
-          Authorization: `Bearer ${token}`,
-        };
-        if (newIdentifier) {
-          dropzone.options.autoProcessQueue = true;
+      () => store.state.canUploadFile,
+      (canUploadFileStatus) => {
+        canUploadFile.value = canUploadFileStatus;
+        if (canUploadFile.value && hasFileAdded.value) {
+          store.dispatch("setAlert", {
+            alertClass: ALERT_INFO,
+            alertMessage: "Video Uploading In-Progress...",
+          });
+          const dropzone = myDropzone.value.dropzone;
+          dropzone.options.url = `${process.env.VUE_APP_API_BASE_URL}/posts/my-posts/${props.identifier}/upload-video`;
+          const token = localStorage.getItem("jwtToken");
+          dropzone.options.headers = {
+            Authorization: `Bearer ${token}`,
+          };
+          dropzone.processQueue();
         }
-        dropzone.processQueue();
       }
     );
 
@@ -85,6 +91,10 @@ export default {
         alertClass: ALERT_SUCCESS,
         alertMessage: "File uploaded successfully.",
       });
+      store.dispatch("setCanUpload", false);
+      hasFileAdded.value = false;
+      const dropzone = myDropzone.value.dropzone;
+      dropzone.removeAllFiles(true); 
     };
 
     const handleError = (file, response) => {
@@ -102,15 +112,13 @@ export default {
         alertClass: ALERT_DANGER,
         alertMessage: errorMessage,
       });
+      store.dispatch("setCanUpload", false);
+      const dropzone = myDropzone.value.dropzone;
+      dropzone.removeAllFiles(file); 
     };
 
     const handleFilesAdded = () => {
-      if (props.identifier) {
-        store.dispatch("setAlert", {
-          alertClass: ALERT_INFO,
-          alertMessage: "Video Uploading In-Progress...",
-        });
-      }
+      hasFileAdded.value = true;
       emit("files-added");
     };
 
@@ -120,6 +128,8 @@ export default {
       handleSuccess,
       handleError,
       handleFilesAdded,
+      canUploadFile,
+      hasFileAdded
     };
   },
 };
